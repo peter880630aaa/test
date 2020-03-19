@@ -22,6 +22,10 @@ def ml_loop():
     # === Here is the execution order of the loop === #
     # 1. Put the initialization code here.
     ball_served = False
+    ball_x_before = 100
+    ball_y_before = 395
+    destination_x = 100
+    save = 0
 
     # 2. Inform the game process that ml process is ready before start the loop.
     comm.ml_ready()
@@ -44,8 +48,8 @@ def ml_loop():
 
         # 3.3. Put the code here to handle the scene information
         ball_x = scene_info.ball[0]
-        #ball_y = scene_info.ball[1]
-        #platform_x = scene_info.platform[0]
+        ball_y = scene_info.ball[1]
+        platform_x = scene_info.platform[0]
         f = scene_info.frame
 
         # 3.4. Send the instruction for this frame to the game process
@@ -53,25 +57,33 @@ def ml_loop():
             comm.send_instruction(scene_info.frame, PlatformAction.SERVE_TO_LEFT)
             ball_served = True
         else:
-            if ball_x < 0 :
-                comm.send_instruction(scene_info.frame, PlatformAction.MOVE_RIGHT)
-            elif f >= 660 and f <= 665 :
-                comm.send_instruction(scene_info.frame, PlatformAction.MOVE_LEFT)
-            elif f >= 785 and f <= 802 :
-                comm.send_instruction(scene_info.frame, PlatformAction.MOVE_RIGHT)
-            elif f >= 870 and f <= 887 :
-                comm.send_instruction(scene_info.frame, PlatformAction.MOVE_LEFT)
-            elif f >= 1410 and f <= 1429 :
-                comm.send_instruction(scene_info.frame, PlatformAction.MOVE_RIGHT)
-            elif f >= 1694 and f <= 1707 :
-                comm.send_instruction(scene_info.frame, PlatformAction.MOVE_LEFT)
-            elif f >= 1930 and f <= 1935 :
-                comm.send_instruction(scene_info.frame, PlatformAction.MOVE_LEFT)
-            elif f >= 2158 and f <= 2163 :
-                comm.send_instruction(scene_info.frame, PlatformAction.MOVE_LEFT)
-            #elif ball_x > platform_x :
-            #    comm.send_instruction(scene_info.frame, PlatformAction.MOVE_RIGHT)
-            #elif ball_x < platform_x :
-            #    comm.send_instruction(scene_info.frame, PlatformAction.MOVE_LEFT)
-            else:
+            if ball_y > 130 and ball_y < 380 and f > save:
+                if ball_x > ball_x_before and ball_y > ball_y_before :
+                    save = ((400 - ball_y) / 7) + 1 + f
+                    t = ball_y + (200 - ball_x)
+                    if (400 - t) >= 200 :
+                        destination_x = 200 - t
+                    else :
+                        destination_x = t - 200
+                elif ball_x < ball_x_before and ball_y > ball_y_before :
+                    save = ((400 - ball_y) / 7) + 1 + f
+                    t = ball_y + ball_x
+                    if (400 - t) >= 200 :
+                        destination_x = t
+                    else :
+                        destination_x = 400 - t
+            elif ball_y <= 130 :
+                destination_x = 100
+            
+            if platform_x + 20 >= destination_x - 5 and platform_x + 20 <= destination_x + 5 :
                 comm.send_instruction(scene_info.frame, PlatformAction.NONE)
+            elif platform_x + 20 < destination_x :
+                comm.send_instruction(scene_info.frame, PlatformAction.MOVE_RIGHT)
+            elif platform_x + 20 > destination_x :
+                comm.send_instruction(scene_info.frame, PlatformAction.MOVE_LEFT)
+            else :
+                comm.send_instruction(scene_info.frame, PlatformAction.NONE)
+        
+        ball_x_before = ball_x
+        ball_y_before = ball_y
+
